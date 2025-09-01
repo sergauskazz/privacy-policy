@@ -22,7 +22,7 @@
         .vk-brand {
             color: #4680c2;
             font-weight: bold;
-        }
+    }
         .success { color: #137333; }
         .error { color: #d93025; }
         .code-box {
@@ -39,12 +39,23 @@
             background: #4680c2;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            margin: 10px;
+            margin: 15px 0;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .copy-btn:hover { background: #5a8bc4; }
+        .copy-btn:hover { 
+            background: #5a8bc4; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -56,13 +67,16 @@
         </div>
 
         <div id="success" style="display: none;">
-            <p class="success">✅ Авторизация успешна!</p>
-            <p>Токен автоматически передан в бот. Можете закрыть эту страницу.</p>
-            <div style="margin: 20px 0;">
-                <div class="success">🔄 Передача данных в бот...</div>
-                <div id="autoCloseTimer" style="margin-top: 10px; color: #666;">
-                    Автоматическое закрытие через <span id="countdown">5</span> сек.
-                </div>
+            <p class="success">✅ Токен VK получен!</p>
+            <p><strong>Скопируйте токен ниже и вставьте в Telegram бот:</strong></p>
+            <div class="code-box" id="authToken"></div>
+            <button class="copy-btn" onclick="copyToClipboard()">📋 Копировать токен</button>
+            <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 14px; border-left: 4px solid #4680c2;">
+                <p><strong>📱 Что делать дальше:</strong></p>
+                <p>1. Вернитесь в Telegram бот<br>
+                2. Нажмите "✅ Ввести код авторизации"<br>
+                3. Вставьте скопированный токен<br>
+                4. Настройте место публикации (страница или группа)</p>
             </div>
         </div>
 
@@ -84,63 +98,34 @@
             return params.get(name);
         }
 
-        function sendTokenToBot(token, userId) {
-            // Отправляем токен в бот через скрытый API endpoint
-            fetch('/api/vk/callback', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    access_token: token,
-                    user_id: userId,
-                    timestamp: Date.now()
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Token sent to bot:', data);
-                startAutoCloseTimer();
-            })
-            .catch(error => {
-                console.error('Error sending token:', error);
-                // В случае ошибки показываем токен для ручного ввода
-                showManualToken(token);
-            });
-        }
-
-        function startAutoCloseTimer() {
-            let countdown = 5;
-            const countdownElement = document.getElementById('countdown');
+        function copyToClipboard() {
+            const tokenElement = document.getElementById('authToken');
+            const token = tokenElement.textContent;
             
-            const timer = setInterval(() => {
-                countdown--;
-                countdownElement.textContent = countdown;
+            navigator.clipboard.writeText(token).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                const originalColor = button.style.background;
                 
-                if (countdown <= 0) {
-                    clearInterval(timer);
-                    window.close();
-                }
-            }, 1000);
-        }
-
-        function showManualToken(token) {
-            document.getElementById('success').innerHTML = `
-                <p class="error">⚠️ Автоматическая передача не удалась</p>
-                <p>Скопируйте токен ниже и вставьте в Telegram бот:</p>
-                <div class="code-box">${token}</div>
-                <button class="copy-btn" onclick="copyToClipboard('${token}')">📋 Копировать токен</button>
-            `;
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                event.target.textContent = '✅ Скопировано!';
-                event.target.style.background = '#137333';
+                button.textContent = '✅ Токен скопирован!';
+                button.style.background = '#137333';
+                
                 setTimeout(() => {
-                    event.target.textContent = '📋 Копировать токен';
-                    event.target.style.background = '#4680c2';
-                }, 2000);
+                    button.textContent = originalText;
+                    button.style.background = originalColor || '#4680c2';
+                }, 3000);
+            }).catch(err => {
+                console.error('Ошибка копирования:', err);
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = token;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                event.target.textContent = '✅ Токен скопирован!';
+                event.target.style.background = '#137333';
             });
         }
 
@@ -154,9 +139,9 @@
                 document.getElementById('loading').style.display = 'none';
 
                 if (token) {
+                    // Показываем токен для ручного копирования
+                    document.getElementById('authToken').textContent = token;
                     document.getElementById('success').style.display = 'block';
-                    // Автоматически отправляем токен в бот
-                    sendTokenToBot(token, userId);
                 } else {
                     document.getElementById('error').style.display = 'block';
                     if (error) {
