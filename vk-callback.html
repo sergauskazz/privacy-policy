@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VK Авторизация</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .vk-brand {
+            color: #4680c2;
+            font-weight: bold;
+        }
+        .success { color: #137333; }
+        .error { color: #d93025; }
+        .code-box {
+            background: #f1f3f4;
+            border: 2px dashed #4680c2;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .copy-btn {
+            background: #4680c2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .copy-btn:hover { background: #5a8bc4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 <span class="vk-brand">VKontakte</span> Авторизация</h1>
+
+        <div id="loading">
+            <p>Обработка авторизации...</p>
+        </div>
+
+        <div id="success" style="display: none;">
+            <p class="success">✅ Авторизация успешна!</p>
+            <p>Токен автоматически передан в бот. Можете закрыть эту страницу.</p>
+            <div style="margin: 20px 0;">
+                <div class="success">🔄 Передача данных в бот...</div>
+                <div id="autoCloseTimer" style="margin-top: 10px; color: #666;">
+                    Автоматическое закрытие через <span id="countdown">5</span> сек.
+                </div>
+            </div>
+        </div>
+
+        <div id="error" style="display: none;">
+            <p class="error">❌ Ошибка авторизации</p>
+            <p>Токен доступа не найден в URL. Попробуйте заново.</p>
+        </div>
+    </div>
+
+    <script>
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        function getHashParameter(name) {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            return params.get(name);
+        }
+
+        function sendTokenToBot(token, userId) {
+            // Отправляем токен в бот через скрытый API endpoint
+            fetch('/api/vk/callback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    access_token: token,
+                    user_id: userId,
+                    timestamp: Date.now()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Token sent to bot:', data);
+                startAutoCloseTimer();
+            })
+            .catch(error => {
+                console.error('Error sending token:', error);
+                // В случае ошибки показываем токен для ручного ввода
+                showManualToken(token);
+            });
+        }
+
+        function startAutoCloseTimer() {
+            let countdown = 5;
+            const countdownElement = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    window.close();
+                }
+            }, 1000);
+        }
+
+        function showManualToken(token) {
+            document.getElementById('success').innerHTML = `
+                <p class="error">⚠️ Автоматическая передача не удалась</p>
+                <p>Скопируйте токен ниже и вставьте в Telegram бот:</p>
+                <div class="code-box">${token}</div>
+                <button class="copy-btn" onclick="copyToClipboard('${token}')">📋 Копировать токен</button>
+            `;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                event.target.textContent = '✅ Скопировано!';
+                event.target.style.background = '#137333';
+                setTimeout(() => {
+                    event.target.textContent = '📋 Копировать токен';
+                    event.target.style.background = '#4680c2';
+                }, 2000);
+            });
+        }
+
+        // Извлечение токена из URL (VK возвращает в hash)
+        window.onload = function() {
+            const token = getHashParameter('access_token');
+            const userId = getHashParameter('user_id');
+            const error = getUrlParameter('error') || getHashParameter('error');
+
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+
+                if (token) {
+                    document.getElementById('success').style.display = 'block';
+                    // Автоматически отправляем токен в бот
+                    sendTokenToBot(token, userId);
+                } else {
+                    document.getElementById('error').style.display = 'block';
+                    if (error) {
+                        console.error('VK OAuth error:', error);
+                    }
+                }
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
