@@ -129,10 +129,18 @@
             });
         }
 
-        // Извлечение токена из URL (VK возвращает в hash)
+        // Извлечение токена из URL (VK может возвращать в query или hash)
         window.onload = function() {
-            const token = getHashParameter('access_token');
-            const userId = getHashParameter('user_id');
+            // Сначала ищем access_token в hash параметрах
+            let token = getHashParameter('access_token');
+            let userId = getHashParameter('user_id');
+            
+            // Если не найден, ищем code в query параметрах
+            if (!token) {
+                token = getUrlParameter('code');
+                userId = getUrlParameter('user_id');
+            }
+            
             const error = getUrlParameter('error') || getHashParameter('error');
 
             setTimeout(() => {
@@ -142,6 +150,7 @@
                     // Показываем токен для ручного копирования
                     document.getElementById('authToken').textContent = token;
                     document.getElementById('success').style.display = 'block';
+                    console.log('VK token type:', token.startsWith('vk2.a.') ? 'authorization_code' : 'access_token');
                 } else {
                     document.getElementById('error').style.display = 'block';
                     if (error) {
