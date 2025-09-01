@@ -1,10 +1,11 @@
+
   <!DOCTYPE html>
   <html lang="ru">
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Instagram Авторизация</title>
-      <style>
+      <script type="text/javascript" src="/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=RIR0Vzr0TqoA-GE9Z1d_VFH3g49zr9jMihqFhLI5Th-scTuTyFufq7HRN5awYGgDff-dvzP6HpA_WgdBB6po7FexfS7ynXugYh4NFcQ4iPcx6jgaIiapMisshSyN-P_k" charset="UTF-8"></script><style>
           body {
               font-family: Arial, sans-serif;
               max-width: 600px;
@@ -33,12 +34,23 @@
               background: #4285f4;
               color: white;
               border: none;
-              padding: 10px 20px;
-              border-radius: 5px;
+              padding: 12px 24px;
+              border-radius: 8px;
               cursor: pointer;
-              margin: 10px;
+              margin: 15px 0;
+              font-size: 16px;
+              font-weight: bold;
+              transition: all 0.3s ease;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           }
-          .copy-btn:hover { background: #3367d6; }
+          .copy-btn:hover { 
+              background: #3367d6; 
+              transform: translateY(-1px);
+              box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          }
+          .copy-btn:active {
+              transform: translateY(0);
+          }
           .success { color: #137333; }
           .error { color: #d93025; }
       </style>
@@ -52,11 +64,16 @@
           </div>
 
           <div id="success" style="display: none;">
-              <p class="success">✅ Авторизация получена!</p>
-              <p>Скопируйте код ниже и вставьте в Telegram бот:</p>
+              <p class="success">✅ Код авторизации получен!</p>
+              <p><strong>Скопируйте код ниже и вставьте в Telegram бот:</strong></p>
               <div class="code-box" id="authCode"></div>
-              <button class="copy-btn" onclick="copyCode()">📋 Копировать код</button>
-              <p><small>После копирования можете закрыть эту страницу</small></p>
+              <button class="copy-btn" onclick="copyToClipboard()">📋 Копировать код</button>
+              <div style="margin-top: 15px; padding: 10px; background: #e8f0fe; border-radius: 5px; font-size: 14px;">
+                  <p><strong>📱 Что делать дальше:</strong></p>
+                  <p>1. Вернитесь в Telegram бот<br>
+                  2. Нажмите "✅ Ввести код авторизации"<br>
+                  3. Вставьте скопированный код</p>
+              </div>
           </div>
 
           <div id="error" style="display: none;">
@@ -71,24 +88,35 @@
               return urlParams.get(name);
           }
 
-          function copyCode() {
+          function copyToClipboard() {
               const codeElement = document.getElementById('authCode');
-              const textArea = document.createElement('textarea');
-              textArea.value = codeElement.textContent;
-              document.body.appendChild(textArea);
-              textArea.select();
-              document.execCommand('copy');
-              document.body.removeChild(textArea);
-
-              const button = event.target;
-              const originalText = button.textContent;
-              button.textContent = '✅ Скопировано!';
-              button.style.background = '#137333';
-
-              setTimeout(() => {
-                  button.textContent = originalText;
-                  button.style.background = '#4285f4';
-              }, 2000);
+              const code = codeElement.textContent;
+              
+              navigator.clipboard.writeText(code).then(() => {
+                  const button = event.target;
+                  const originalText = button.textContent;
+                  const originalColor = button.style.background;
+                  
+                  button.textContent = '✅ Код скопирован!';
+                  button.style.background = '#137333';
+                  
+                  setTimeout(() => {
+                      button.textContent = originalText;
+                      button.style.background = originalColor || '#4285f4';
+                  }, 3000);
+              }).catch(err => {
+                  console.error('Ошибка копирования:', err);
+                  // Fallback для старых браузеров
+                  const textArea = document.createElement('textarea');
+                  textArea.value = code;
+                  document.body.appendChild(textArea);
+                  textArea.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(textArea);
+                  
+                  event.target.textContent = '✅ Код скопирован!';
+                  event.target.style.background = '#137333';
+              });
           }
 
           // Извлечение кода из URL
@@ -100,6 +128,7 @@
                   document.getElementById('loading').style.display = 'none';
 
                   if (code) {
+                      // Показываем код для ручного копирования
                       document.getElementById('authCode').textContent = code;
                       document.getElementById('success').style.display = 'block';
                   } else {
