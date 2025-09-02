@@ -75,8 +75,12 @@
                 <p><strong>📱 Что делать дальше:</strong></p>
                 <p>1. Вернитесь в Telegram бот<br>
                 2. Нажмите "✅ Ввести код авторизации"<br>
-                3. Вставьте скопированный токен<br>
+                3. Вставьте <strong>полную ссылку</strong> (не только код!)<br>
                 4. Настройте место публикации (страница или группа)</p>
+                
+                <div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 12px;">
+                    <strong>💡 Важно:</strong> Вставляйте всю ссылку целиком, а не только код - это нужно для правильной работы VK API.
+                </div>
             </div>
         </div>
 
@@ -147,10 +151,12 @@
                 document.getElementById('loading').style.display = 'none';
 
                 if (token) {
-                    // Показываем токен для ручного копирования
-                    document.getElementById('authToken').textContent = token;
+                    // Показываем полную ссылку для копирования (нужна для device_id)
+                    const fullUrl = window.location.href;
+                    document.getElementById('authToken').textContent = fullUrl;
                     document.getElementById('success').style.display = 'block';
                     console.log('VK token type:', token.startsWith('vk2.a.') ? 'authorization_code' : 'access_token');
+                    console.log('Full URL for copying:', fullUrl);
                 } else {
                     document.getElementById('error').style.display = 'block';
                     if (error) {
